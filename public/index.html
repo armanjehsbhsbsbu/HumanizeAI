@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HumanizeAI — AI Detector & Humanizer</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F7F5F2; --surface: #FFFFFF; --border: #E4E0D9; --text: #1A1816;
+    --muted: #8A8480; --accent: #2D5016; --accent-light: #EDF2E8;
+    --danger: #C0392B; --danger-light: #FDECEA; --warn: #B7791F; --warn-light: #FEF3CD;
+    --success: #276749; --success-light: #E6F4ED; --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04);
+  }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 15px; line-height: 1.6; }
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 32px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .logo { display: flex; align-items: center; gap: 10px; }
+  .logo-icon { width: 30px; height: 30px; background: var(--text); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .logo-icon svg { width: 16px; height: 16px; fill: white; }
+  .logo-name { font-family: 'DM Serif Display', serif; font-size: 18px; letter-spacing: -0.3px; }
+  .lang-toggle { display: flex; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 3px; gap: 2px; }
+  .lang-btn { padding: 4px 12px; border: none; background: transparent; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--muted); transition: all 0.15s; }
+  .lang-btn.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .hero { text-align: center; padding: 56px 24px 40px; }
+  .hero-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--accent-light); color: var(--accent); border-radius: 20px; padding: 4px 14px; font-size: 12px; font-weight: 500; letter-spacing: 0.3px; text-transform: uppercase; margin-bottom: 20px; }
+  .hero h1 { font-family: 'DM Serif Display', serif; font-size: clamp(32px, 5vw, 52px); line-height: 1.1; letter-spacing: -1px; margin-bottom: 16px; max-width: 600px; margin-left: auto; margin-right: auto; }
+  .hero h1 em { font-style: italic; color: var(--accent); }
+  .hero p { color: var(--muted); max-width: 440px; margin: 0 auto; font-size: 15px; font-weight: 300; }
+  .container { max-width: 900px; margin: 0 auto; padding: 0 24px 80px; }
+  .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 5px; margin-bottom: 24px; width: fit-content; }
+  .tab-btn { padding: 8px 20px; border: none; background: transparent; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; color: var(--muted); transition: all 0.2s; display: flex; align-items: center; gap: 7px; }
+  .tab-btn.active { background: var(--text); color: white; }
+  .panel { display: none; animation: fadeUp 0.2s ease; }
+  .panel.active { display: block; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .card-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .card-title { font-size: 13px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .char-count { font-size: 12px; color: var(--muted); }
+  textarea { width: 100%; min-height: 200px; padding: 20px; border: none; outline: none; font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.7; color: var(--text); background: transparent; resize: vertical; }
+  textarea::placeholder { color: #BFBAB4; }
+  .card-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 12px; background: #FAFAF8; }
+  .footer-hint { font-size: 12px; color: var(--muted); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 8px; border: none; font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.15s; }
+  .btn-primary { background: var(--text); color: white; }
+  .btn-primary:hover:not(:disabled) { background: #333; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--bg); color: var(--text); }
+  .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .btn.loading .spinner { display: block; }
+  .btn.loading .btn-label { display: none; }
+  .result-section { margin-top: 20px; animation: fadeUp 0.25s ease; }
+  .score-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; box-shadow: var(--shadow); }
+  .score-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+  .score-label { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 6px; }
+  .score-number { font-family: 'DM Serif Display', serif; font-size: 56px; line-height: 1; letter-spacing: -2px; }
+  .score-verdict { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 500; margin-top: 8px; }
+  .verdict-low { background: var(--success-light); color: var(--success); }
+  .verdict-medium { background: var(--warn-light); color: var(--warn); }
+  .verdict-high { background: var(--danger-light); color: var(--danger); }
+  .score-bar-wrap { background: var(--bg); border-radius: 4px; height: 6px; overflow: hidden; margin-bottom: 24px; }
+  .score-bar { height: 100%; border-radius: 4px; transition: width 0.8s cubic-bezier(0.16,1,0.3,1); }
+  .bar-low { background: var(--success); } .bar-medium { background: var(--warn); } .bar-high { background: var(--danger); }
+  .score-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
+  .detail-item { background: var(--bg); border-radius: 8px; padding: 14px; }
+  .detail-key { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+  .detail-val { font-size: 14px; font-weight: 500; }
+  .analysis-text { margin-top: 16px; padding: 16px; background: var(--bg); border-radius: 8px; font-size: 14px; line-height: 1.7; color: var(--text); }
+  .output-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .output-text { padding: 20px; font-size: 15px; line-height: 1.8; color: var(--text); min-height: 160px; white-space: pre-wrap; }
+  .output-actions { padding: 14px 20px; border-top: 1px solid var(--border); background: #FAFAF8; display: flex; gap: 8px; align-items: center; }
+  .mode-selector { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .mode-chip { padding: 6px 14px; border: 1px solid var(--border); border-radius: 20px; font-size: 13px; cursor: pointer; background: var(--surface); color: var(--muted); transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+  .mode-chip.selected { background: var(--accent-light); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+  .copy-feedback { font-size: 12px; color: var(--success); opacity: 0; transition: opacity 0.3s; }
+  .copy-feedback.show { opacity: 1; }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 640px) { .split { grid-template-columns: 1fr; } .hero h1 { font-size: 28px; } .score-number { font-size: 42px; } }
+  .section-label { font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 12px; }
+  .error-msg { padding: 14px 16px; background: var(--danger-light); border: 1px solid #F5C6C2; border-radius: 8px; color: var(--danger); font-size: 14px; margin-top: 12px; display: none; }
+  .error-msg.show { display: block; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+    </div>
+    <span class="logo-name">HumanizeAI</span>
+  </div>
+  <div class="lang-toggle">
+    <button class="lang-btn active" onclick="setLang('en')">EN</button>
+    <button class="lang-btn" onclick="setLang('es')">ES</button>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-badge">✦ <span data-t="badge">Free AI Tool</span></div>
+  <h1><em data-t="h1a">Detect</em> <span data-t="h1b">& humanize</span><br><span data-t="h1c">AI-written text</span></h1>
+  <p data-t="subtitle">Paste any text to check how much AI was involved — then rewrite it to sound authentically human.</p>
+</div>
+
+<div class="container">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('detect')">
+      <span>🔍</span><span data-t="tab_detect">AI Detector</span>
+    </button>
+    <button class="tab-btn" onclick="switchTab('humanize')">
+      <span>✍️</span><span data-t="tab_humanize">Humanizer</span>
+    </button>
+  </div>
+
+  <!-- DETECT -->
+  <div id="panel-detect" class="panel active">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title" data-t="detect_label">Paste your text</span>
+        <span class="char-count" id="detect-count">0 / 3000</span>
+      </div>
+      <textarea id="detect-input" maxlength="3000"
+        placeholder="Paste any text here to analyse its AI probability..."
+        oninput="updateCount('detect-input','detect-count')"></textarea>
+      <div class="card-footer">
+        <span class="footer-hint" data-t="detect_hint">Min. 50 characters for reliable results</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost" onclick="clearDetect()" data-t="clear">Clear</button>
+          <button class="btn btn-primary" id="detect-btn" onclick="runDetect()">
+            <span class="spinner"></span>
+            <span class="btn-label" data-t="analyse">Analyse text</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="error-msg" id="detect-error"></div>
+    <div id="detect-result" class="result-section" style="display:none"></div>
+  </div>
+
+  <!-- HUMANIZE -->
+  <div id="panel-humanize" class="panel">
+    <div class="section-label" data-t="tone_label">Tone</div>
+    <div class="mode-selector">
+      <button class="mode-chip selected" data-mode="natural" onclick="selectMode(this)">Natural</button>
+      <button class="mode-chip" data-mode="formal" onclick="selectMode(this)" data-t-mode="Formal">Formal</button>
+      <button class="mode-chip" data-mode="casual" onclick="selectMode(this)" data-t-mode="Casual">Casual</button>
+      <button class="mode-chip" data-mode="academic" onclick="selectMode(this)" data-t-mode="Academic">Academic</button>
+    </div>
+    <div class="split">
+      <div>
+        <div class="section-label" data-t="original_label">Original text</div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title" data-t="input_label">Input</span>
+            <span class="char-count" id="humanize-count">0 / 3000</span>
+          </div>
+          <textarea id="humanize-input" maxlength="3000"
+            placeholder="Paste AI-generated text here..."
+            oninput="updateCount('humanize-input','humanize-count')"></textarea>
+          <div class="card-footer">
+            <span class="footer-hint" data-t="humanize_hint">Any AI-generated content</span>
+            <button class="btn btn-primary" id="humanize-btn" onclick="runHumanize()">
+              <span class="spinner"></span>
+              <span class="btn-label" data-t="humanize">Humanize</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="section-label" data-t="result_label">Humanized result</div>
+        <div class="output-card">
+          <div class="output-text" id="humanize-output">Your humanized text will appear here...</div>
+          <div class="output-actions" id="output-actions" style="display:none">
+            <button class="btn btn-ghost" onclick="copyOutput()" data-t="copy">Copy</button>
+            <button class="btn btn-ghost" onclick="sendToDetect()" data-t="check_result">Check result</button>
+            <span class="copy-feedback" id="copy-feedback" data-t="copied">Copied!</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="error-msg" id="humanize-error"></div>
+  </div>
+</div>
+
+<script>
+const T = {
+  en: {
+    badge:"Free AI Tool", h1a:"Detect", h1b:"& humanize", h1c:"AI-written text",
+    subtitle:"Paste any text to check how much AI was involved — then rewrite it to sound authentically human.",
+    tab_detect:"AI Detector", tab_humanize:"Humanizer",
+    detect_label:"Paste your text", detect_hint:"Min. 50 characters for reliable results",
+    analyse:"Analyse text", clear:"Clear",
+    tone_label:"Tone", original_label:"Original text", input_label:"Input",
+    humanize_hint:"Any AI-generated content", humanize:"Humanize",
+    result_label:"Humanized result", copy:"Copy", check_result:"Check result", copied:"Copied!",
+    score_label:"AI Probability",
+    verdict_low:"Likely human", verdict_medium:"Possibly AI", verdict_high:"Likely AI",
+    detail_perplexity:"Complexity", detail_burstiness:"Variation", detail_confidence:"Confidence",
+    err_short:"Please enter at least 50 characters.", err_api:"Server error. Is the server running?",
+    mode_natural:"Natural", mode_formal:"Formal", mode_casual:"Casual", mode_academic:"Academic",
+  },
+  es: {
+    badge:"Herramienta gratuita", h1a:"Detecta", h1b:"y humaniza", h1c:"texto generado por IA",
+    subtitle:"Pega cualquier texto para comprobar cuánta IA hay — y reescríbelo para que suene auténticamente humano.",
+    tab_detect:"Detector IA", tab_humanize:"Humanizador",
+    detect_label:"Pega tu texto", detect_hint:"Mín. 50 caracteres para resultados fiables",
+    analyse:"Analizar texto", clear:"Limpiar",
+    tone_label:"Tono", original_label:"Texto original", input_label:"Entrada",
+    humanize_hint:"Cualquier contenido generado por IA", humanize:"Humanizar",
+    result_label:"Resultado humanizado", copy:"Copiar", check_result:"Comprobar resultado", copied:"¡Copiado!",
+    score_label:"Probabilidad IA",
+    verdict_low:"Probablemente humano", verdict_medium:"Posiblemente IA", verdict_high:"Probablemente IA",
+    detail_perplexity:"Complejidad", detail_burstiness:"Variación", detail_confidence:"Confianza",
+    err_short:"Introduce al menos 50 caracteres.", err_api:"Error de servidor. ¿Está corriendo el servidor?",
+    mode_natural:"Natural", mode_formal:"Formal", mode_casual:"Informal", mode_academic:"Académico",
+  }
+};
+
+let lang = 'en';
+
+function setLang(l) {
+  lang = l;
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.toLowerCase() === l));
+  document.querySelectorAll('[data-t]').forEach(el => {
+    const key = el.getAttribute('data-t');
+    if (T[l][key]) el.textContent = T[l][key];
+  });
+  document.querySelectorAll('.mode-chip').forEach(chip => {
+    const key = 'mode_' + chip.getAttribute('data-mode');
+    if (T[l][key]) chip.textContent = T[l][key];
+  });
+  const hOut = document.getElementById('humanize-output');
+  if (!hOut.dataset.hasContent) hOut.textContent = T[l]['humanize_placeholder'] || 'Your humanized text will appear here...';
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', ['detect','humanize'][i] === name));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+}
+
+function updateCount(inputId, countId) {
+  document.getElementById(countId).textContent = document.getElementById(inputId).value.length + ' / 3000';
+}
+
+function clearDetect() {
+  document.getElementById('detect-input').value = '';
+  document.getElementById('detect-count').textContent = '0 / 3000';
+  document.getElementById('detect-result').style.display = 'none';
+  document.getElementById('detect-error').classList.remove('show');
+}
+
+function selectMode(el) {
+  document.querySelectorAll('.mode-chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function setLoading(btnId, on) {
+  const btn = document.getElementById(btnId);
+  btn.classList.toggle('loading', on);
+  btn.disabled = on;
+}
+
+// ── Calls YOUR server, not Anthropic directly ──
+async function callClaude(system, userMsg) {
+  const res = await fetch('/api/claude', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ system, userMsg })
+  });
+  if (!res.ok) throw new Error('Server error ' + res.status);
+  const data = await res.json();
+  return data.text;
+}
+
+async function runDetect() {
+  const text = document.getElementById('detect-input').value.trim();
+  const errEl = document.getElementById('detect-error');
+  errEl.classList.remove('show');
+  if (text.length < 50) { errEl.textContent = T[lang].err_short; errEl.classList.add('show'); return; }
+  setLoading('detect-btn', true);
+  document.getElementById('detect-result').style.display = 'none';
+  try {
+    const system = `You are an AI text detection expert. Analyse the provided text and return ONLY a valid JSON object with NO markdown, NO code fences, NO explanation.
+The JSON must have exactly these fields:
+- score: integer 0-100 (probability the text was AI-generated)
+- complexity: "Low" | "Medium" | "High"
+- variation: "Low" | "Medium" | "High"
+- confidence: "Low" | "Medium" | "High"
+- analysis: a 2-3 sentence explanation in ${lang === 'es' ? 'Spanish' : 'English'} of the reasoning`;
+    const raw = await callClaude(system, text);
+    const result = JSON.parse(raw.replace(/```json|```/g, '').trim());
+    renderDetectResult(result);
+  } catch(e) {
+    errEl.textContent = T[lang].err_api;
+    errEl.classList.add('show');
+  }
+  setLoading('detect-btn', false);
+}
+
+function renderDetectResult(r) {
+  const score = Math.max(0, Math.min(100, r.score));
+  const level = score < 40 ? 'low' : score < 70 ? 'medium' : 'high';
+  const dot = level === 'low' ? '🟢' : level === 'medium' ? '🟡' : '🔴';
+  document.getElementById('detect-result').innerHTML = `
+    <div class="score-card">
+      <div class="score-header">
+        <div>
+          <div class="score-label">${T[lang].score_label}</div>
+          <div class="score-number" style="color:${level==='low'?'var(--success)':level==='medium'?'var(--warn)':'var(--danger)'}">${score}%</div>
+          <div class="score-verdict verdict-${level}">${dot} ${T[lang]['verdict_'+level]}</div>
+        </div>
+        <div style="display:grid;gap:8px;min-width:140px">
+          <div class="detail-item"><div class="detail-key">${T[lang].detail_perplexity}</div><div class="detail-val">${r.complexity}</div></div>
+          <div class="detail-item"><div class="detail-key">${T[lang].detail_burstiness}</div><div class="detail-val">${r.variation}</div></div>
+          <div class="detail-item"><div class="detail-key">${T[lang].detail_confidence}</div><div class="detail-val">${r.confidence}</div></div>
+        </div>
+      </div>
+      <div class="score-bar-wrap"><div class="score-bar bar-${level}" style="width:0%" id="anim-bar"></div></div>
+      <div class="analysis-text">${r.analysis}</div>
+    </div>`;
+  document.getElementById('detect-result').style.display = 'block';
+  setTimeout(() => { document.getElementById('anim-bar').style.width = score + '%'; }, 50);
+}
+
+async function runHumanize() {
+  const text = document.getElementById('humanize-input').value.trim();
+  const errEl = document.getElementById('humanize-error');
+  errEl.classList.remove('show');
+  if (text.length < 20) { errEl.textContent = T[lang].err_short; errEl.classList.add('show'); return; }
+  const mode = document.querySelector('.mode-chip.selected')?.getAttribute('data-mode') || 'natural';
+  setLoading('humanize-btn', true);
+  const outputEl = document.getElementById('humanize-output');
+  outputEl.textContent = '...';
+  try {
+    const toneMap = {
+      natural: lang==='es' ? 'natural y fluido' : 'natural and fluid',
+      formal:  lang==='es' ? 'formal y profesional pero sin sonar robótico' : 'formal and professional but not robotic',
+      casual:  lang==='es' ? 'casual y conversacional' : 'casual and conversational',
+      academic:lang==='es' ? 'académico y riguroso pero con voz humana' : 'academic but with human voice',
+    };
+    const system = lang === 'es'
+      ? `Eres un experto en reescribir texto para que suene humano. Reescribe con tono ${toneMap[mode]}. Varía la longitud de frases. Evita palabras típicas de IA. Mantén el significado. Responde ÚNICAMENTE con el texto reescrito.`
+      : `You are an expert at rewriting text to sound human. Rewrite in a ${toneMap[mode]} tone. Vary sentence length. Avoid typical AI words. Preserve meaning. Reply ONLY with the rewritten text.`;
+    const result = await callClaude(system, text);
+    outputEl.textContent = result.trim();
+    outputEl.dataset.hasContent = '1';
+    document.getElementById('output-actions').style.display = 'flex';
+  } catch(e) {
+    errEl.textContent = T[lang].err_api;
+    errEl.classList.add('show');
+    outputEl.textContent = '';
+    delete outputEl.dataset.hasContent;
+  }
+  setLoading('humanize-btn', false);
+}
+
+function copyOutput() {
+  navigator.clipboard.writeText(document.getElementById('humanize-output').textContent).then(() => {
+    const fb = document.getElementById('copy-feedback');
+    fb.classList.add('show');
+    setTimeout(() => fb.classList.remove('show'), 2000);
+  });
+}
+
+function sendToDetect() {
+  document.getElementById('detect-input').value = document.getElementById('humanize-output').textContent;
+  updateCount('detect-input','detect-count');
+  switchTab('detect');
+  setTimeout(() => runDetect(), 200);
+}
+</script>
+</body>
+</html>
